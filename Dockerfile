@@ -7,7 +7,6 @@ ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     CONTAINER=1 \
     PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
-    DATA_DIR=/data \
     PROFILE_DIR=/tmp/profiles
 
 WORKDIR /app

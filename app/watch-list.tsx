@@ -16,9 +16,11 @@ const inputCls = "mt-1 w-full rounded border px-2 py-1.5 text-sm";
 export default function WatchList({
   initial,
   defaultChatId,
+  canCheckNow,
 }: {
   initial: Watch[];
   defaultChatId: string;
+  canCheckNow: boolean;
 }) {
   const [watches, setWatches] = useState(initial);
   const [url, setUrl] = useState("");
@@ -114,13 +116,17 @@ export default function WatchList({
 
       <div className="mt-6 flex items-center justify-between">
         <h2 className="font-semibold">Watching ({watches.length})</h2>
-        <button
-          onClick={checkNow}
-          disabled={checking || !watches.length}
-          className="rounded border px-3 py-1.5 text-sm disabled:opacity-40"
-        >
-          {checking ? "Checking…" : "Check now"}
-        </button>
+        {canCheckNow ? (
+          <button
+            onClick={checkNow}
+            disabled={checking || !watches.length}
+            className="rounded border px-3 py-1.5 text-sm disabled:opacity-40"
+          >
+            {checking ? "Checking…" : "Check now"}
+          </button>
+        ) : (
+          <span className="text-xs text-gray-400">checked every 30 min by the cron</span>
+        )}
       </div>
 
       <div className="mt-2 overflow-x-auto">

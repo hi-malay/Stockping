@@ -1,4 +1,4 @@
-import { readWatches, saveResult } from "./store";
+import { readSnapshot, saveWatches } from "./store";
 import { sendMessage } from "./telegram";
 import { PLATFORM_LABELS, type CheckInput, type Platform, type PlatformResult } from "./types";
 import { check as blinkit } from "./scrapers/blinkit";
@@ -12,7 +12,8 @@ export const SCRAPERS: Record<Platform, (i: CheckInput) => Promise<PlatformResul
 };
 
 export async function runAllChecks() {
-  const watches = readWatches();
+  const snapshot = await readSnapshot();
+  const watches = snapshot.watches;
   const summary: { platform: Platform; status: string }[] = [];
 
   for (const w of watches) {
@@ -41,10 +42,15 @@ export async function runAllChecks() {
       );
     }
 
-    saveResult(w.id, { ...result, checkedAt: new Date().toISOString(), notifiedAt });
+    w.result = { ...result, checkedAt: new Date().toISOString(), notifiedAt };
     summary.push({ platform: w.platform, status: result.status });
     console.log(`[check] ${w.platform} → ${result.status} ${result.price ?? ""}`);
   }
 
+  // one write for the whole run, not one per watch — on the GitHub backend that is
+  // one commit instead of three
+  if (watches.length) {
+    await saveWatches(snapshot, watches, `check: ${summary.map((s) => s.status).join(", ")}`);
+  }
   return summary;
 }

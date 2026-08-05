@@ -5,7 +5,7 @@ import { platformFromUrl } from "@/lib/types";
 export const runtime = "nodejs";
 
 export async function GET() {
-  return NextResponse.json(readWatches());
+  return NextResponse.json(await readWatches());
 }
 
 export async function POST(req: Request) {
@@ -30,5 +30,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "telegram chat id required" }, { status: 400 });
   }
 
-  return NextResponse.json(addWatch({ url, platform, pincode, chatId }), { status: 201 });
+  return NextResponse.json(await addWatch({ url, platform, pincode, chatId }), { status: 201 });
 }
