@@ -1,0 +1,83 @@
+name: deploy to gcp
+
+# Vercel deploys the UI on its own. This only pushes the scraper image that the
+# Cloud Run cron job runs.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "lib/**"
+      - "scripts/**"
+      - "app/**"
+      - "worker.ts"
+      - "Dockerfile"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/deploy-gcp.yml"
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: stockping-malay
+  REGION: asia-south1
+  IMAGE: asia-south1-docker.pkg.dev/stockping-malay/stockping/app
+
+# no key anywhere — GitHub mints an OIDC token, GCP trades it for creds
+permissions:
+  contents: read
+  id-token: write
+
+# never let two deploys race onto the same job
+concurrency:
+  group: deploy-gcp
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/772202273269/locations/global/workloadIdentityPools/github/providers/github-provider
+          service_account: stockping-deployer@stockping-malay.iam.gserviceaccount.com
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: build image
+        run: |
+          gcloud builds submit \
+            --project="$PROJECT_ID" \
+            --tag="$IMAGE:$GITHUB_SHA" \
+            --timeout=25m
+
+      - name: point the cron job at the new image
+        run: |
+          gcloud run jobs update stockping-check \
+            --project="$PROJECT_ID" \
+            --region="$REGION" \
+            --image="$IMAGE:$GITHUB_SHA"
+
+      - name: smoke test — run it once and fail the build if the container dies
+        run: |
+          gcloud run jobs execute stockping-check \
+            --project="$PROJECT_ID" \
+            --region="$REGION" \
+            --wait
+
+      - name: show what the checks reported
+        run: |
+          gcloud logging read \
+            'resource.type="cloud_run_job" AND (textPayload:"[check]" OR textPayload:"[area]")' \
+            --project="$PROJECT_ID" --limit=20 --freshness=20m \
+            --format="value(textPayload)" | tail -r
+
+      # Artifact Registry only gives 0.5 GB free and each image is ~570 MB, so keep 3
+      - name: prune old images
+        run: |
+          gcloud artifacts docker images list "$IMAGE" \
+            --project="$PROJECT_ID" --sort-by=~CREATE_TIME \
+            --format="value(DIGEST)" | tail -n +4 | while read -r d; do
+              [ -n "$d" ] && gcloud artifacts docker images delete "$IMAGE@$d" \
+                --project="$PROJECT_ID" --delete-tags --quiet || true
+            done
