@@ -7,13 +7,27 @@ export const PLATFORM_LABELS: Record<Platform, string> = {
   instamart: "Instamart",
 };
 
+// A watch is one product URL. The platform comes from the link, so there is nothing
+// to pick and nothing to keep in sync.
+export function platformFromUrl(url: string): Platform | null {
+  let host: string;
+  try {
+    host = new URL(url).hostname;
+  } catch {
+    return null;
+  }
+  if (host.endsWith("blinkit.com")) return "blinkit";
+  if (host.endsWith("zepto.com") || host.endsWith("zeptonow.com")) return "zepto";
+  if (host.endsWith("instamart.in") || host.endsWith("swiggy.com")) return "instamart";
+  return null;
+}
+
 export type Status = "in_stock" | "out_of_stock" | "error";
 
 export type PlatformResult = {
   status: Status;
   price?: string;
   title?: string;
-  url?: string;
   error?: string;
 };
 
@@ -24,18 +38,12 @@ export type StoredResult = PlatformResult & {
 
 export type Watch = {
   id: string;
-  label: string;
-  chatId: string;
+  url: string;
+  platform: Platform;
   pincode: string;
-  query?: string;
-  urls?: Partial<Record<Platform, string>>;
-  platforms: Platform[];
+  chatId: string;
   createdAt: string;
-  results: Partial<Record<Platform, StoredResult>>;
+  result?: StoredResult;
 };
 
-export type CheckInput = {
-  pincode: string;
-  url?: string;
-  query?: string;
-};
+export type CheckInput = { url: string; pincode: string };

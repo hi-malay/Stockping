@@ -1,23 +1,22 @@
-// Dev helper: run one scraper against one URL (or search term) and print what it found.
-//   npx tsx scripts/probe.ts blinkit https://blinkit.com/prn/.../prid/771901
-//   HEADED=1 npx tsx scripts/probe.ts zepto "hot wheels"
+// Dev helper: run one product URL and print what it found.
+//   npx tsx scripts/probe.ts https://blinkit.com/prn/.../prid/771901
+//   HEADED=1 npx tsx scripts/probe.ts <url> 560100
 import { SCRAPERS } from "../lib/checker";
-import { PLATFORMS, type Platform } from "../lib/types";
+import { platformFromUrl } from "../lib/types";
 
-const [platform, target, pincode = "560100"] = process.argv.slice(2);
+const [url, pincode = "560100"] = process.argv.slice(2);
+const platform = url ? platformFromUrl(url) : null;
 
-if (!PLATFORMS.includes(platform as Platform) || !target) {
-  console.error(`usage: tsx scripts/probe.ts <${PLATFORMS.join("|")}> <url|query> [pincode]`);
+if (!platform) {
+  console.error("usage: tsx scripts/probe.ts <blinkit|zepto|instamart product url> [pincode]");
   process.exit(1);
 }
 
-const input = target.startsWith("http") ? { url: target } : { query: target };
-
-console.log(`[probe] ${platform} · ${pincode} ·`, input);
+console.log(`[probe] ${platform} · ${pincode} · ${url}`);
 const t0 = Date.now();
-SCRAPERS[platform as Platform]({ pincode, ...input })
+SCRAPERS[platform]({ url, pincode })
   .then((r) => console.log(`[probe] done in ${Math.round((Date.now() - t0) / 1000)}s`, r))
   .catch((e) => {
-    console.error("[probe] failed:", e);
+    console.error("[probe] failed:", e instanceof Error ? e.message : e);
     process.exit(1);
   });

@@ -44,12 +44,16 @@ jobs:
 
       - uses: google-github-actions/setup-gcloud@v2
 
+      # --suppress-logs because streaming build logs needs project Viewer on the
+      # deployer SA; without it gcloud exits 1 even when the build itself SUCCEEDED.
+      # Full logs stay available in the Cloud Build console.
       - name: build image
         run: |
           gcloud builds submit \
             --project="$PROJECT_ID" \
             --tag="$IMAGE:$GITHUB_SHA" \
-            --timeout=25m
+            --timeout=25m \
+            --suppress-logs
 
       - name: point the cron job at the new image
         run: |
