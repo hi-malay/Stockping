@@ -6,21 +6,29 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "worker": "tsx worker.ts",
+    "probe": "tsx scripts/probe.ts",
+    "chatid": "tsx scripts/chatid.ts"
   },
   "dependencies": {
+    "dotenv": "^17.4.2",
     "next": "16.2.12",
+    "node-cron": "^4.6.0",
+    "playwright": "^1.62.1",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/node-cron": "^3.0.11",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
     "tailwindcss": "^4",
+    "tsx": "^4.23.5",
     "typescript": "^5"
   }
 }
